@@ -1,43 +1,29 @@
 services:
   # ── Django Auth API ──
   - type: web
-    name: nexora-django
+    name: nexora-backend
     runtime: python
     region: oregon
     plan: free
     rootDir: backend/django_core
     buildCommand: bash build.sh
-    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: daphne -b 0.0.0.0 -p $PORT core.asgi:application
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: ".onrender.com"
+        value: "*"
       - key: CORS_ALLOWED_ORIGINS
-        sync: false  # Set manually to your Vercel URL
+        value: "https://nexora-ai.vercel.app"
+      - key: GOOGLE_API_KEY
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: nexora-db
           property: connectionString
 
-  # ── Flask AI Service ──
-  - type: web
-    name: nexora-flask
-    runtime: python
-    region: oregon
-    plan: free
-    rootDir: backend/flask_services
-    buildCommand: bash build.sh
-    startCommand: gunicorn -w 1 --threads 4 app:app --bind 0.0.0.0:$PORT
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false  # Set manually in Render dashboard
-      - key: DJANGO_API_URL
-        value: https://nexora-django.onrender.com
-      - key: FLASK_SECRET_KEY
-        generateValue: true
 
 databases:
   - name: nexora-db
