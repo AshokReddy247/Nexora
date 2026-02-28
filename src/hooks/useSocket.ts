@@ -5,7 +5,18 @@ import { Mode } from '@/store/modeStore';
 import { toast } from '@/store/toastStore';
 import { TokenStorage } from '@/lib/authClient';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+function getWsUrl() {
+    const base = process.env.NEXT_PUBLIC_WS_URL || 'localhost:8000';
+    // Strip any protocol prefix already included in the env var
+    const host = base.replace(/^wss?:\/\//, '').replace(/^https?:\/\//, '');
+    // In production (HTTPS), automatically use wss:// for security
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        return `wss://${host}`;
+    }
+    return `ws://${host}`;
+}
+
+const WS_URL = getWsUrl();
 
 interface UseSocketOptions {
     sessionId: string;
