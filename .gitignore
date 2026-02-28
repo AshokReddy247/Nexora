@@ -52,3 +52,6 @@ staticfiles/
 
 # Gemini IDE
 .gemini/
+
+# Old Backend
+backend/flask_services/

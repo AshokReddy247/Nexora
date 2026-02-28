@@ -9,6 +9,7 @@ import { Mode } from '@/store/modeStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useGhostCursor } from '@/hooks/useGhostCursor';
 import { useRagStore } from '@/store/ragStore';
+import { useIoTStore } from '@/store/iotStore';
 import SmartCopy from './SmartCopy';
 import BrainView from '../three/BrainView';
 import GhostHighlight from './GhostHighlight';
@@ -42,11 +43,11 @@ export default function AIChat({ mode }: AIChatProps) {
     ]);
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
     const [showExport, setShowExport] = useState(false);
     const [zeroRetention, setZeroRetention] = useState(false);
     const [ghostIntent, setGhostIntent] = useState<{ intent: import('@/hooks/useGhostCursor').GhostIntent; confidence: number }>({ intent: null, confidence: 0 });
 
+    const updateTelemetry = useIoTStore(s => s.updateTelemetry);
     const streamingMsgId = useRef<string | null>(null);
     const crossTalkMsgId = useRef<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -92,7 +93,6 @@ export default function AIChat({ mode }: AIChatProps) {
 
     const handleStart = useCallback(() => {
         setIsStreaming(true);
-        setIsConnected(true);
         const newMsgId = uuidv4();
         streamingMsgId.current = newMsgId;
         setMessages(prev => [...prev, { id: newMsgId, role: 'ai', content: '', streaming: true }]);
@@ -150,7 +150,7 @@ export default function AIChat({ mode }: AIChatProps) {
         toast.info('Cross-Talk complete', 'Agent report received');
     }, []);
 
-    const { sendMessage } = useSocket({
+    const { sendMessage, isConnected } = useSocket({
         sessionId,
         onToken: handleToken,
         onEnd: handleEnd,
@@ -160,6 +160,7 @@ export default function AIChat({ mode }: AIChatProps) {
         onCrosstalkStart: handleCrosstalkStart,
         onCrosstalkToken: handleCrosstalkToken,
         onCrosstalkEnd: handleCrosstalkEnd,
+        onIoTTelemetry: (data: unknown) => updateTelemetry(data as any),
     });
 
     const send = () => {
@@ -169,7 +170,6 @@ export default function AIChat({ mode }: AIChatProps) {
         const userMsg: Message = { id: uuidv4(), role: 'user', content: msg };
         setMessages(prev => [...prev, userMsg]);
         historyRef.current.push({ role: 'user', content: msg });
-        setIsConnected(true);
         sendMessage(mode, msg, historyRef.current.slice(-16), zeroRetention);
     };
 

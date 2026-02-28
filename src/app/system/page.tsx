@@ -7,6 +7,7 @@ import AIChat from '@/components/ui/AIChat';
 import { MODE_CONFIG, MODES } from '@/lib/modeConfig';
 import { useRouter } from 'next/navigation';
 import { Activity, Shield, Cpu, Wifi, ChevronRight } from 'lucide-react';
+import IoTDashboard from '@/components/ui/IoTDashboard';
 
 const agentStatuses = [
     { id: 'dev', label: 'Developer Agent', status: 'online', tasks: 3, color: '#00ffcc' },
@@ -103,13 +104,13 @@ export default function SystemPage() {
             </motion.div>
 
             {/* Bottom Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-380px)] min-h-[360px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-380px)] min-h-[360px]">
                 {/* System Chat */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="glass rounded-2xl overflow-hidden flex flex-col"
+                    className="lg:col-span-3 glass rounded-2xl overflow-hidden flex flex-col"
                     style={{ border: '1px solid rgba(139,92,246,0.2)' }}
                 >
                     <div className="text-xs text-white/40 px-4 py-3 border-b border-white/5">
@@ -118,95 +119,109 @@ export default function SystemPage() {
                     <AIChat mode="system" />
                 </motion.div>
 
-                {/* Agent Status */}
+                {/* IoT Dashboard */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.35 }}
-                    className="glass rounded-2xl p-5 flex flex-col"
-                    style={{ border: '1px solid rgba(139,92,246,0.15)' }}
+                    className="lg:col-span-6 glass rounded-2xl overflow-hidden"
+                    style={{ border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.02)' }}
                 >
-                    <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Agent Status</h3>
-                    <div className="space-y-3 flex-1">
-                        {agentStatuses.map((agent, i) => (
-                            <motion.div
-                                key={agent.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.4 + i * 0.07 }}
-                                className="flex items-center gap-3 p-3 rounded-xl"
-                                style={{ background: `${agent.color}0a` }}
-                            >
+                    <IoTDashboard />
+                </motion.div>
+
+                {/* Right Sidebar */}
+                <div className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto scrollbar-thin">
+                    {/* Agent Status */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="glass rounded-2xl p-5 flex flex-col shrink-0"
+                        style={{ border: '1px solid rgba(139,92,246,0.15)' }}
+                    >
+                        <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Agent Status</h3>
+                        <div className="space-y-3 flex-1">
+                            {agentStatuses.map((agent, i) => (
                                 <motion.div
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{ background: agent.status === 'idle' ? '#6b7280' : agent.color }}
-                                    animate={agent.status !== 'idle' ? { opacity: [1, 0.4, 1] } : {}}
-                                    transition={{ duration: agent.status === 'processing' ? 0.8 : 2, repeat: Infinity }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-medium text-white">{agent.label}</div>
-                                    <div className="text-[10px] text-white/30 capitalize">{agent.status} · {agent.tasks} tasks</div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.div>
-
-                {/* Services */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="glass rounded-2xl p-5 flex flex-col"
-                    style={{ border: '1px solid rgba(139,92,246,0.15)' }}
-                >
-                    <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Connected Services</h3>
-                    <div className="space-y-2.5">
-                        {services.map((svc, i) => (
-                            <motion.div
-                                key={svc.label}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.45 + i * 0.07 }}
-                                className="flex items-center gap-3 p-3 rounded-xl"
-                                style={{ background: 'rgba(139,92,246,0.06)' }}
-                            >
-                                <svc.icon size={16} style={{ color: '#8b5cf6' }} />
-                                <span className="text-xs text-white/70 flex-1">{svc.label}</span>
-                                <span
-                                    className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                                    style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}
+                                    key={agent.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 + i * 0.07 }}
+                                    className="flex items-center gap-3 p-3 rounded-xl"
+                                    style={{ background: `${agent.color}0a` }}
                                 >
-                                    {svc.status}
-                                </span>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    {/* System Health Bars */}
-                    <div className="mt-4 space-y-2">
-                        {[
-                            { label: 'CPU', val: 23 },
-                            { label: 'Memory', val: 61 },
-                            { label: 'Network', val: 45 },
-                        ].map((bar) => (
-                            <div key={bar.label}>
-                                <div className="flex justify-between text-[10px] text-white/30 mb-1">
-                                    <span>{bar.label}</span><span>{bar.val}%</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                                     <motion.div
-                                        className="h-full rounded-full"
-                                        style={{ background: 'linear-gradient(90deg, #7c3aed, #8b5cf6)' }}
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${bar.val}%` }}
-                                        transition={{ delay: 0.6, duration: 0.8 }}
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{ background: agent.status === 'idle' ? '#6b7280' : agent.color }}
+                                        animate={agent.status !== 'idle' ? { opacity: [1, 0.4, 1] } : {}}
+                                        transition={{ duration: agent.status === 'processing' ? 0.8 : 2, repeat: Infinity }}
                                     />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-medium text-white">{agent.label}</div>
+                                        <div className="text-[10px] text-white/30 capitalize">{agent.status} · {agent.tasks} tasks</div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* Services */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.45 }}
+                        className="glass rounded-2xl p-5 flex flex-col shrink-0"
+                        style={{ border: '1px solid rgba(139,92,246,0.15)' }}
+                    >
+                        <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Connected Services</h3>
+                        <div className="space-y-2.5">
+                            {services.map((svc, i) => (
+                                <motion.div
+                                    key={svc.label}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.45 + i * 0.07 }}
+                                    className="flex items-center gap-3 p-3 rounded-xl"
+                                    style={{ background: 'rgba(139,92,246,0.06)' }}
+                                >
+                                    <svc.icon size={16} style={{ color: '#8b5cf6' }} />
+                                    <span className="text-xs text-white/70 flex-1">{svc.label}</span>
+                                    <span
+                                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                                        style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}
+                                    >
+                                        {svc.status}
+                                    </span>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* System Health Bars */}
+                        <div className="mt-4 space-y-2">
+                            {[
+                                { label: 'CPU', val: 23 },
+                                { label: 'Memory', val: 61 },
+                                { label: 'Network', val: 45 },
+                            ].map((bar) => (
+                                <div key={bar.label}>
+                                    <div className="flex justify-between text-[10px] text-white/30 mb-1">
+                                        <span>{bar.label}</span><span>{bar.val}%</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                                        <motion.div
+                                            className="h-full rounded-full"
+                                            style={{ background: 'linear-gradient(90deg, #7c3aed, #8b5cf6)' }}
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${bar.val}%` }}
+                                            transition={{ delay: 0.6, duration: 0.8 }}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
+                            ))}
+                        </div>
+                    </motion.div>
+                </div>
             </div>
         </div>
     );

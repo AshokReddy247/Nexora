@@ -355,6 +355,93 @@ export default function IndexPage() {
         </div>
       </section>
 
+      {/* ── Developer Mission ── */}
+      <section id="developer" className="relative py-24 px-6 md:px-12 max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-center bg-white/[0.02] border border-white/[0.05] rounded-3xl p-8 md:p-12 lg:p-16"
+        >
+          <div className="flex-1 space-y-6">
+            <div className="text-xs font-mono text-indigo-400 tracking-widest uppercase mb-2">The Builder's Mission</div>
+            <h2 className="text-3xl md:text-5xl font-black text-white leading-[1.1] tracking-tight">
+              Building real <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">intelligent systems.</span>
+            </h2>
+            <div className="space-y-4 text-white/50 leading-relaxed text-sm md:text-base">
+              <p>
+                I’m deeply interested in building real AI systems — not just training models, but making them work in the real world. Right now, my focus is at the intersection of Artificial Intelligence, backend engineering, and cloud technologies.
+              </p>
+              <p>
+                What excites me most is this question: <br />
+                <span className="inline-block mt-3 text-white/80 font-medium italic border-l-2 border-indigo-500 pl-4 py-1 bg-white/[0.02] rounded-r-lg pr-4">
+                  “How do we take an idea or a model and turn it into something reliable, scalable, and useful?”
+                </span>
+              </p>
+              <ul className="space-y-3 mt-4 pt-2">
+                <li className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                  Backend development (FastAPI, Django)
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
+                  ML model integration and deployment
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
+                  Cloud fundamentals & Clean system design
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  IoT (Internet of Things) connectivity & integration
+                </li>
+              </ul>
+              <div className="pt-6 mt-6 border-t border-white/5">
+                <p className="text-white/70 font-medium">
+                  My goal is simple — to become someone who can build intelligent systems end-to-end, from idea to deployment.
+                </p>
+                <p className="text-[10px] text-white/30 mt-3 font-mono uppercase tracking-widest">
+                  Still learning. Still building. Serious about growth and working on IoT.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full lg:w-[400px] flex justify-center shrink-0">
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#0d0020] flex items-center justify-center group shadow-2xl shadow-indigo-500/5">
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-cyan-500/10 opacity-50 group-hover:opacity-100 transition duration-700" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0d0020] to-transparent z-10" />
+              <pre className="text-[10px] md:text-xs text-cyan-400/50 font-mono p-8 w-full h-full overflow-hidden leading-relaxed z-0 group-hover:text-cyan-400/80 transition-colors duration-500">
+                {`const SYSTEM_ARCH = {
+  stack: {
+    frontend: "Next.js",
+    backend: ["FastAPI", "Django"],
+    db: "PostgreSQL + Vector",
+    edge: "IoT Devices"
+  },
+  ai: {
+    engine: "Gemini Pro",
+    routing: "Semantic",
+    realtime: "WebSockets"
+  },
+  status: "BUILDING",
+  mission: "scalable_ai"
+};
+
+class Engineer {
+  constructor() {
+    this.focus = "End-to-End";
+    this.domains = ["Cloud", "AI", "IoT"];
+    this.growth = Infinity;
+  }
+}`}
+              </pre>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
       {/* ── About / CTA banner ── */}
       <section id="about" className="relative py-24 px-6 flex justify-center">
         <motion.div

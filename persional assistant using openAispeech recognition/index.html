@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Assistant | AI Speech Recognition</title>
+    <meta name="description" content="A premium personal assistant interface using OpenAI Speech Recognition">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+
+<body>
+    <div class="background-glob"></div>
+    <div class="background-glob-2"></div>
+
+    <main class="container">
+        <div class="glass-card">
+            <header class="header">
+                <div class="header-top">
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Ready</span>
+                    </div>
+                    <button id="settingsBtn" class="icon-btn" aria-label="Settings">
+                        <i class="ph ph-gear"></i>
+                    </button>
+                </div>
+                <h1>Personal Assistant</h1>
+                <p class="subtitle">Powered by OpenAI Speech Recognition</p>
+            </header>
+
+            <div class="conversation-area" id="conversationArea">
+                <div class="message assistant-message">
+                    <div class="avatar">
+                        <i class="ph ph-robot"></i>
+                    </div>
+                    <div class="content">
+                        Hello! I'm your personal assistant. How can I help you today?
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <button id="micButton" class="mic-button" aria-label="Start listening">
+                    <i class="ph ph-microphone"></i>
+                    <div class="pulse-ring"></div>
+                </button>
+                <div class="listening-text" id="listeningText">Tap to speak</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettings"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="apiKey">OpenAI API Key</label>
+                    <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
+                    <p class="help-text">Stored locally in your browser. Never sent to our servers.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettings" class="btn-primary">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

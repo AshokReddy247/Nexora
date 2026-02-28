@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Mode } from '@/store/modeStore';
 import { toast } from '@/store/toastStore';
 import { TokenStorage } from '@/lib/authClient';
 
-const FLASK_URL = process.env.NEXT_PUBLIC_FLASK_URL || 'http://localhost:5000';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
 
 interface UseSocketOptions {
     sessionId: string;
@@ -14,110 +13,120 @@ interface UseSocketOptions {
     onEnd: (fullResponse: string) => void;
     onError: (error: string) => void;
     onStart?: () => void;
-    // Phase 4 — RAG trace for BrainView
     onRagTrace?: (data: unknown) => void;
-    // Phase 5 — Cross-Talk events
     onCrosstalkStart?: (data: unknown) => void;
     onCrosstalkToken?: (data: unknown) => void;
     onCrosstalkEnd?: (data: unknown) => void;
+    onIoTTelemetry?: (data: unknown) => void;
 }
 
 export function useSocket(options: UseSocketOptions) {
-    const {
-        sessionId,
-        onToken,
-        onEnd,
-        onError,
-        onStart,
-        onRagTrace,
-        onCrosstalkStart,
-        onCrosstalkToken,
-        onCrosstalkEnd,
-    } = options;
-
-    const socketRef = useRef<Socket | null>(null);
-    const isConnected = useRef(false);
+    const { sessionId } = options;
+    const socketRef = useRef<WebSocket | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
+    const savedCallbacks = useRef(options);
 
     useEffect(() => {
-        const socket = io(FLASK_URL, {
-            transports: ['websocket', 'polling'],
-            autoConnect: true,
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-        });
+        savedCallbacks.current = options;
+    }, [options]);
 
-        socketRef.current = socket;
+    useEffect(() => {
+        // Django Channels WS URL expects the session ID in the path
+        const wsUrl = `${WS_URL}/ws/chat/${sessionId}/`;
+        let socket: WebSocket;
+        let reconnectTimeout: ReturnType<typeof setTimeout>;
+        let attempt = 0;
+        const maxAttempts = 10;
+        let isComponentMounted = true;
 
-        socket.on('connect', () => {
-            isConnected.current = true;
-            socket.emit('join_session', { session_id: sessionId });
-        });
+        function connect() {
+            if (!isComponentMounted) return;
 
-        socket.on('disconnect', () => {
-            isConnected.current = false;
-        });
+            socket = new WebSocket(wsUrl);
+            socketRef.current = socket;
 
-        socket.on('connect_error', () => {
-            toast.error('Connection Error', 'Could not reach AI service. Is Flask running?');
-        });
+            socket.onopen = () => {
+                setIsConnected(true);
+                attempt = 0;
+            };
 
-        socket.on('session_ready', () => {
-            // Session joined — ready to send
-        });
+            socket.onmessage = (messageEvent) => {
+                try {
+                    const data = JSON.parse(messageEvent.data);
+                    const event = data.event;
+                    const payload = data.data;
 
-        socket.on('stream_start', () => {
-            onStart?.();
-        });
+                    switch (event) {
+                        case 'session_ready':
+                            break;
+                        case 'stream_start':
+                            savedCallbacks.current.onStart?.();
+                            break;
+                        case 'stream_token':
+                            savedCallbacks.current.onToken(payload.token);
+                            break;
+                        case 'stream_end':
+                            savedCallbacks.current.onEnd(payload.full_response);
+                            break;
+                        case 'stream_error':
+                            savedCallbacks.current.onError(payload.error);
+                            if (payload.rate_limited) {
+                                toast.warning('Rate limit reached', `Too many requests. Retry in ${payload.retry_after ?? 60}s.`);
+                            } else {
+                                toast.error('AI Error', payload.error);
+                            }
+                            break;
+                        case 'rag_trace':
+                            savedCallbacks.current.onRagTrace?.(payload);
+                            break;
+                        case 'crosstalk_start':
+                            savedCallbacks.current.onCrosstalkStart?.(payload);
+                            break;
+                        case 'crosstalk_token':
+                            savedCallbacks.current.onCrosstalkToken?.(payload);
+                            break;
+                        case 'crosstalk_end':
+                            savedCallbacks.current.onCrosstalkEnd?.(payload);
+                            break;
+                        case 'iot_telemetry':
+                            savedCallbacks.current.onIoTTelemetry?.(payload);
+                            break;
+                        case 'crosstalk_error':
+                            toast.error('Cross-Talk Error', payload.error);
+                            break;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse websocket message", e);
+                }
+            };
 
-        socket.on('stream_token', (data: { token: string }) => {
-            onToken(data.token);
-        });
+            socket.onclose = () => {
+                setIsConnected(false);
+                if (isComponentMounted && attempt < maxAttempts) {
+                    attempt++;
+                    reconnectTimeout = setTimeout(connect, 1000 * attempt);
+                }
+            };
 
-        socket.on('stream_end', (data: { full_response: string }) => {
-            onEnd(data.full_response);
-        });
+            socket.onerror = () => {
+                if (attempt === 0) {
+                    toast.error('Connection Error', 'Could not reach AI service. Is Django running?');
+                }
+            };
+        }
 
-        socket.on('stream_error', (data: { error: string; rate_limited?: boolean; retry_after?: number }) => {
-            onError(data.error);
-            if (data.rate_limited) {
-                toast.warning(
-                    'Rate limit reached',
-                    `Too many requests. Retry in ${data.retry_after ?? 60}s.`
-                );
-            } else {
-                toast.error('AI Error', data.error);
-            }
-        });
-
-        // Phase 4 — Brain View RAG trace
-        socket.on('rag_trace', (data: unknown) => {
-            onRagTrace?.(data);
-        });
-
-        // Phase 5 — Cross-Talk events
-        socket.on('crosstalk_start', (data: unknown) => {
-            onCrosstalkStart?.(data);
-        });
-
-        socket.on('crosstalk_token', (data: unknown) => {
-            onCrosstalkToken?.(data);
-        });
-
-        socket.on('crosstalk_end', (data: unknown) => {
-            onCrosstalkEnd?.(data);
-        });
-
-        socket.on('crosstalk_error', (data: { error: string }) => {
-            toast.error('Cross-Talk Error', data.error);
-        });
+        connect();
 
         return () => {
-            socket.emit('leave_session', { session_id: sessionId });
-            socket.disconnect();
-            isConnected.current = false;
+            isComponentMounted = false;
+            clearTimeout(reconnectTimeout);
+            if (socket) {
+                // Ensure socket is completely disconnected
+                socket.close();
+            }
+            socketRef.current = null;
+            setIsConnected(false);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessionId]);
 
     const sendMessage = useCallback(
@@ -128,23 +137,29 @@ export function useSocket(options: UseSocketOptions) {
             zeroRetention = false,
         ) => {
             const socket = socketRef.current;
-            if (!socket?.connected) {
-                onError('Not connected to AI service.');
-                toast.error('Not connected', 'Check that Flask is running on port 5000.');
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                savedCallbacks.current.onError('Not connected to AI service.');
+                toast.error('Not connected', 'Check that Django Channels is running.');
                 return;
             }
+
             const user = TokenStorage.getUser();
-            socket.emit('chat_message', {
-                mode,
-                message,
-                session_id: sessionId,
-                user_id: user?.username || 'anonymous',
-                history,
-                zero_retention: zeroRetention,
-            });
+
+            // Replicate the socket.io emit pattern
+            socket.send(JSON.stringify({
+                event: 'chat_message',
+                data: {
+                    mode,
+                    message,
+                    session_id: sessionId,
+                    user_id: user?.username || 'anonymous',
+                    history,
+                    zero_retention: zeroRetention,
+                }
+            }));
         },
-        [sessionId, onError]
+        [sessionId]
     );
 
-    return { sendMessage };
+    return { sendMessage, isConnected };
 }
