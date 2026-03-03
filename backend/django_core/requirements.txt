@@ -13,3 +13,5 @@ google-generativeai>=0.8
 reportlab>=4.1
 PyGithub>=2.2
 requests>=2.31
+pinecone>=5.0
+sentence-transformers>=3.0
