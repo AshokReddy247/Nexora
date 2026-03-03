@@ -121,7 +121,7 @@ export function useSocket(options: UseSocketOptions) {
 
             socket.onerror = () => {
                 if (attempt === 0) {
-                    toast.error('Connection Error', 'Could not reach AI service. Is Django running?');
+                    toast.warning('AI Connecting...', 'Backend is starting up. Retrying automatically…');
                 }
             };
         }
@@ -150,7 +150,7 @@ export function useSocket(options: UseSocketOptions) {
             const socket = socketRef.current;
             if (!socket || socket.readyState !== WebSocket.OPEN) {
                 savedCallbacks.current.onError('Not connected to AI service.');
-                toast.error('Not connected', 'Check that Django Channels is running.');
+                toast.warning('Still connecting...', 'AI backend is starting up. Please try again in a moment.');
                 return;
             }
 

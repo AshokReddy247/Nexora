@@ -12,6 +12,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-this-in-pro
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS is also re-applied at the bottom after CORS block to support wildcard
 
 INSTALLED_APPS = [
     'daphne',
@@ -134,8 +135,16 @@ SIMPLE_JWT = {
 }
 
 # ---- CORS ----
-CORS_ALLOWED_ORIGINS = os.getenv(
-    'CORS_ALLOWED_ORIGINS', 'http://localhost:3000'
-).split(',')
+_cors_defaults = ','.join([
+    'http://localhost:3000',
+    'https://synora-ai-kappa.vercel.app',
+])
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', _cors_defaults).split(',')
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 CORS_ALLOW_CREDENTIALS = True
+
+# ---- WebSocket / ASGI ----
+# Allow all hosts for WebSocket upgrades (Railway assigns dynamic hostnames)
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+if '*' in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['*']
