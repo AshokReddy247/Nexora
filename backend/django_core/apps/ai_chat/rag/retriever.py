@@ -1,50 +1,50 @@
 """
 Pinecone RAG pipeline: embed → query → retrieve context.
-Uses sentence-transformers all-MiniLM-L6-v2 for embeddings (384-dim).
-Emits rag_trace SocketIO event with real-time node graph data.
+Uses Google's text-embedding-004 model (already installed via google-generativeai).
+No sentence-transformers / PyTorch needed — keeps the Docker image small.
+Emits rag_trace event with real-time node graph data for the 3D Brain View.
 """
 import os
 import time
 import math
-import random
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-_embedder = None
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY', ''))
+
+EMBED_MODEL = 'models/text-embedding-004'   # 768-dim, free tier supported
+EMBED_DIM = 768
+
 _pinecone_index = None
-
-
-def _get_embedder():
-    global _embedder
-    if _embedder is None:
-        print("[RAG] Loading SentenceTransformer model...")
-        from sentence_transformers import SentenceTransformer
-        _embedder = SentenceTransformer('all-MiniLM-L6-v2')
-        print("[RAG] Model loaded.")
-    return _embedder
 
 
 def _get_index():
     global _pinecone_index
     if _pinecone_index is None:
-        from pinecone import Pinecone, ServerlessSpec
         api_key = os.getenv('PINECONE_API_KEY', '')
         index_name = os.getenv('PINECONE_INDEX', 'nexor-ai')
         if not api_key:
             return None
-        pc = Pinecone(api_key=api_key)
-        if index_name not in pc.list_indexes().names():
-            pc.create_index(
-                name=index_name,
-                dimension=384,
-                metric='cosine',
-                spec=ServerlessSpec(
-                    cloud=os.getenv('PINECONE_CLOUD', 'aws'),
-                    region=os.getenv('PINECONE_ENVIRONMENT', 'us-east-1'),
+        try:
+            from pinecone import Pinecone, ServerlessSpec
+            pc = Pinecone(api_key=api_key)
+            existing = [i.name for i in pc.list_indexes()]
+            if index_name not in existing:
+                pc.create_index(
+                    name=index_name,
+                    dimension=EMBED_DIM,
+                    metric='cosine',
+                    spec=ServerlessSpec(
+                        cloud=os.getenv('PINECONE_CLOUD', 'aws'),
+                        region=os.getenv('PINECONE_ENVIRONMENT', 'us-east-1'),
+                    )
                 )
-            )
-        _pinecone_index = pc.Index(index_name)
+            _pinecone_index = pc.Index(index_name)
+        except Exception as e:
+            print(f"[RAG] Pinecone init failed: {e}")
+            return None
     return _pinecone_index
 
 
@@ -60,8 +60,17 @@ def _spherical_pos(index: int, total: int, radius: float = 3.0):
 
 
 def embed_text(text: str) -> list:
-    """Generate embedding vector for a text string."""
-    return _get_embedder().encode(text).tolist()
+    """Generate a 768-dim embedding via Google text-embedding-004."""
+    try:
+        result = genai.embed_content(
+            model=EMBED_MODEL,
+            content=text,
+            task_type='retrieval_document',
+        )
+        return result['embedding']
+    except Exception as e:
+        print(f"[RAG] Embedding failed: {e}")
+        return []
 
 
 def upsert_memory(
@@ -74,7 +83,7 @@ def upsert_memory(
 ) -> bool:
     """
     Upsert a text embedding into Pinecone.
-    Skips silently if zero_retention is True.
+    Skips silently if zero_retention is True or Pinecone not configured.
     """
     if zero_retention:
         return False
@@ -82,17 +91,23 @@ def upsert_memory(
     if index is None:
         return False
     vector = embed_text(text)
+    if not vector:
+        return False
     meta = {
         'text': text[:500],
         'mode': mode,
         'user_id': str(user_id),
         **(metadata or {}),
     }
-    index.upsert(
-        vectors=[{'id': vector_id, 'values': vector, 'metadata': meta}],
-        namespace=f'{mode}_{user_id}',
-    )
-    return True
+    try:
+        index.upsert(
+            vectors=[{'id': vector_id, 'values': vector, 'metadata': meta}],
+            namespace=f'{mode}_{user_id}',
+        )
+        return True
+    except Exception as e:
+        print(f"[RAG] Upsert failed: {e}")
+        return False
 
 
 def retrieve_context(
@@ -105,8 +120,9 @@ def retrieve_context(
 ) -> str:
     """
     Query Pinecone for similar memories.
-    Emits a rag_trace SocketIO event with node-graph data for the Brain View.
+    Emits a rag_trace event with node-graph data for the Brain View.
     Returns context string or empty string.
+    Falls back gracefully if Pinecone is not configured.
     """
     index = _get_index()
     t_start = time.time()
@@ -135,6 +151,9 @@ def retrieve_context(
 
     try:
         query_vector = embed_text(query)
+        if not query_vector:
+            return ''
+
         results = index.query(
             vector=query_vector,
             top_k=top_k,
